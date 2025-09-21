@@ -44,7 +44,7 @@ const CFG = {
     // positions
     oppBaseX:  180,    // original x
     oppNearX:   92,    // in front of player (tweak to taste)
-    handSize:   64,    // your slap hand sprite size
+    handSize:   14,    // your slap hand sprite size
     // impact flash
     flashAlpha: 0.75
   }
@@ -286,59 +286,62 @@ function render(){
 
 
 if (game.scene==='slap'){
-  // Timeline split
+  // Phase times
   const T1 = CFG.slap.tApproach;
   const T2 = T1 + CFG.slap.tWindup;
   const T3 = T2 + CFG.slap.tHit;
   const T4 = T3 + CFG.slap.tRetreat;
   const t  = game.animT;
 
-  // 1) Draw base world but hide static opponent (we’ll draw a moving one)
-  drawBase({ omitOpp:true }); 
+  // We’ll draw the world without static opponent, then a moving opponent on top
+  drawBase({ omitOpp:true });
   drawHearts();
 
-  // Compute opponent X based on phase
+  // Opponent X along timeline
   let oppX = CFG.slap.oppBaseX;
   if (t <= T1) {
-    // Approach interp
     const u = t / T1;
     oppX = CFG.slap.oppBaseX + (CFG.slap.oppNearX - CFG.slap.oppBaseX) * u;
   } else if (t <= T3) {
-    // In front during windup+hit
     oppX = CFG.slap.oppNearX;
   } else if (t <= T4) {
-    // Retreat
-    const u = (t - T3) / (CFG.slap.tRetreat);
+    const u = (t - T3) / CFG.slap.tRetreat;
     oppX = CFG.slap.oppNearX + (CFG.slap.oppBaseX - CFG.slap.oppNearX) * u;
-  } else {
-    oppX = CFG.slap.oppBaseX;
   }
 
-  // Draw opponent in foreground (over player)
+  // CAMERA SHAKE strongest at impact window, easing in/out
+  let shakeX = 0, shakeY = 0;
+  if (t > T2 && t <= T3) {
+    const p = (t - T2) / Math.max(1, CFG.slap.tHit);
+    const strength = 3 * (1 - Math.abs(0.5 - p) * 2); // 0→1→0
+    // simple randomized shake
+    shakeX = (Math.random() * 2 - 1) * strength;
+    shakeY = (Math.random() * 2 - 1) * strength;
+  }
+
+  // Draw moving opponent (over player), with shake
+  ctx.save();
+  ctx.translate(shakeX, shakeY);
   if (assets.opponent) ctx.drawImage(assets.opponent, oppX, CFG.ui.opponentY);
 
-
-
-  
-  // Hand swing during windup/hit phases
+  // Hand swing during windup+hit, drawn in same shaken layer
   if ((t > T1) && (t <= T3) && assets.slapHand) {
-    // pivot around a point to make it feel like a swing from right to left
-    const size = CFG.slap.handSize;      // e.g. 64
-    const px = 20 + 18;                  // near player's head (player base x=20)
+    const size = CFG.slap.handSize;          // e.g., 64
+    const px = 20 + 18;                      // near player face (player at x=20,y=70)
     const py = 70 + 10;
 
-    // windup 0..1 then hit 1..2
-    let phase = (t - T1) / (CFG.slap.tWindup + CFG.slap.tHit); // 0..1-ish
     const total = CFG.slap.tWindup + CFG.slap.tHit;
-    phase = (t - T1) / total; // 0..1
-    // Map to angle: windup back (~ -50deg) to forward (~ +25deg)
-    const ang = (phase < CFG.slap.tWindup/total)
-      ? ( -50 * (Math.PI/180) * (phase / (CFG.slap.tWindup/total)) )
-      : ( -50 * (Math.PI/180) + (75 * (Math.PI/180)) * ((phase - (CFG.slap.tWindup/total)) / (CFG.slap.tHit/total)) );
+    const phase = (t - T1) / total;          // 0..1 across windup+hit
+    const windFrac = CFG.slap.tWindup / total;
 
-    // Position offset so it comes from the right
-    const offX = 32; // how far to the right the hand originates
-    const offY = -6; // slight vertical tweak
+    // Angle: windup (-55°) to hit (+25°)
+    const ang = (phase < windFrac)
+      ? (-55 * Math.PI/180) * (phase / windFrac)
+      : (-55 * Math.PI/180) + (80 * Math.PI/180) * ((phase - windFrac) / (1 - windFrac));
+
+    // Draw the hand coming from the right
+    const offX = 36; // further right origin so it really swings in
+    const offY = -6;
 
     ctx.save();
     ctx.translate(px + offX, py + offY);
@@ -346,19 +349,24 @@ if (game.scene==='slap'){
     ctx.drawImage(assets.slapHand, -size*0.2, -size*0.2, size, size);
     ctx.restore();
   }
+  ctx.restore();
 
-  // Screen flash during impact window
+  // Longer/softer FLASH over the whole screen during the hit window
   if (t > T2 && t <= T3) {
-    const p = (t - T2) / (CFG.slap.tHit || 1);
-    ctx.fillStyle = `rgba(0,0,0,${CFG.slap.flashAlpha * (1 - Math.abs(0.5 - p)*2)})`;
+    const p = (t - T2) / Math.max(1, CFG.slap.tHit);   // 0..1
+    // smoothstep curve for flash: s = p^2*(3-2p)
+    const s = p*p*(3 - 2*p);
+    const a = CFG.slap.flashAlpha * (1 - Math.abs(0.5 - s) * 2); // bell 0→1→0
+    ctx.fillStyle = `rgba(0,0,0,${a})`;
     ctx.fillRect(0,0,W,H);
   }
 
-  // Dialog box (optional “SLAP!” text)
+  // Dialog box
   if (assets.box) ctx.drawImage(assets.box, CFG.ui.box.x, CFG.ui.box.y);
   drawText(8, CFG.ui.box.y + 8, "SLAP!", assets.box ? "#000" : "#fff");
   return;
 }
+
 
 
   if (game.scene==='gameOver'){
