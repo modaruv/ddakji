@@ -39,14 +39,14 @@ const CFG = {
     // timings (frames at 60fps): total = 20 + 12 + 6 + 20 = 58
     tApproach: 20,     // opponent rushes in
     tWindup:   12,     // arm/hand wind-up
-    tHit:       6,     // impact window (flash)
+    tHit:       8,     // impact window (flash)
     tRetreat:  20,     // go back to base
     // positions
     oppBaseX:  180,    // original x
-    oppNearX:   96,    // in front of player (tweak to taste)
+    oppNearX:   92,    // in front of player (tweak to taste)
     handSize:   64,    // your slap hand sprite size
     // impact flash
-    flashAlpha: 0.65
+    flashAlpha: 0.75
   }
 };
 
@@ -317,6 +317,9 @@ if (game.scene==='slap'){
   // Draw opponent in foreground (over player)
   if (assets.opponent) ctx.drawImage(assets.opponent, oppX, CFG.ui.opponentY);
 
+
+
+  
   // Hand swing during windup/hit phases
   if ((t > T1) && (t <= T3) && assets.slapHand) {
     // pivot around a point to make it feel like a swing from right to left
@@ -501,6 +504,8 @@ function loop(){ update(); render(); requestAnimationFrame(loop); }
   assets.box       = await loadImg(window.Sprites.box);
   assets.heart     = await loadImg(window.Sprites.heart);
   assets.heartEmpty= await loadImg(window.Sprites.heartEmpty);
+  assets.slapHand  = await loadImg(window.Sprites.slapHand);
+
 
   document.addEventListener('click', onClick);
   document.addEventListener('keydown', onKey);
