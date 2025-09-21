@@ -136,13 +136,18 @@ function drawHearts(){
     else if(assets.heartEmpty) ctx.drawImage(assets.heartEmpty,hx,hy);
   }
 }
-function drawBase(){
+
+function drawBase(opts){
+  opts = opts || {};
   if (assets.bg) ctx.drawImage(assets.bg,0,0); else { ctx.fillStyle='#121219'; ctx.fillRect(0,0,W,H); }
   if (assets.opponent) ctx.drawImage(assets.opponent, 180, CFG.ui.opponentY);
   if (assets.player)   ctx.drawImage(assets.player,   20,  70);
-  if (assets.tileRed)  ctx.drawImage(assets.tileRed,  CFG.tiles.redPos.x, CFG.tiles.redPos.y);
-  if (assets.tileBlue) ctx.drawImage(assets.tileBlue, CFG.tiles.blueStart.x, CFG.tiles.blueStart.y);
+  if (assets.tileRed && !opts.omitRed)
+    ctx.drawImage(assets.tileRed,  CFG.tiles.redPos.x, CFG.tiles.redPos.y);
+  if (assets.tileBlue && !opts.omitBlue)
+    ctx.drawImage(assets.tileBlue, CFG.tiles.blueStart.x, CFG.tiles.blueStart.y);
 }
+
 
 function computeHit(power,x,y){
   const dp = Math.abs(power-CFG.throw.powerTarget);
@@ -231,25 +236,40 @@ function render(){
     return;
   }
 
+
+
   if (game.scene==='winFlip'){
-    drawBase(); drawHearts();
+  // Hide the static red tile while its animated version flies/spins
+  drawBase({ omitRed:true }); 
+  drawHearts();
 
-    // Spin the red tile in place, then land flipped
-    const d = 60, u = Math.min(game.animT / d, 1);
-    const cx = CFG.tiles.redPos.x + 8, cy = CFG.tiles.redPos.y + 8;
-    const angle = u * Math.PI * 6; // 3 spins
+  // Red tile flies upward-left a bit while spinning, then returns and lands flipped
+  const d = 60;                         // animation frames
+  const u = Math.min(game.animT / d, 1);
+  const start = { x: CFG.tiles.redPos.x, y: CFG.tiles.redPos.y };
+  const apex  = { x: start.x - 12,       y: start.y - 28 }; // up & a little left
+  const end   = { x: start.x,            y: start.y };
 
-    ctx.save();
-    ctx.translate(cx, cy);
-    ctx.rotate(angle);
-    const img = (u >= 0.95 && assets.tileRedBack) ? assets.tileRedBack : assets.tileRed;
-    if (img) ctx.drawImage(img, -8, -8, 16, 16);
-    ctx.restore();
+  // Quadratic Bezier for a smooth up-and-down arc
+  const x = (1-u)*(1-u)*start.x + 2*(1-u)*u*apex.x + u*u*end.x;
+  const y = (1-u)*(1-u)*start.y + 2*(1-u)*u*apex.y + u*u*end.y;
 
-    if (assets.box) ctx.drawImage(assets.box, CFG.ui.box.x, CFG.ui.box.y);
-    drawText(8, CFG.ui.box.y + 8, "Tile flipped!", assets.box ? "#000" : "#fff");
-    return;
-  }
+  // Spin while moving
+  const angle = u * Math.PI * 6; // 3 full spins
+  const img = (u >= 0.95 && assets.tileRedBack) ? assets.tileRedBack : assets.tileRed;
+
+  ctx.save();
+  ctx.translate(x + 8, y + 8); // center for a 16x16 tile
+  ctx.rotate(angle);
+  if (img) ctx.drawImage(img, -8, -8, 16, 16);
+  ctx.restore();
+
+  // Dialog
+  if (assets.box) ctx.drawImage(assets.box, CFG.ui.box.x, CFG.ui.box.y);
+  drawText(8, CFG.ui.box.y + 8, "Tile flipped!", assets.box ? "#000" : "#fff");
+  return;
+}
+
 
   if (game.scene==='slap'){
     const amp = 2, shake = Math.sin(game.animT * 0.8) * amp;
