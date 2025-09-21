@@ -37,16 +37,16 @@ const CFG = {
   },
     slap: {
     // timings (frames at 60fps): total = 20 + 12 + 6 + 20 = 58
-    tApproach: 20,     // opponent rushes in
-    tWindup:   12,     // arm/hand wind-up
-    tHit:       8,     // impact window (flash)
-    tRetreat:  20,     // go back to base
+    tApproach: 26,     // opponent rushes in
+    tWindup:   18,     // arm/hand wind-up
+    tHit:      16,     // impact window (flash)
+    tRetreat:  26,     // go back to base
     // positions
     oppBaseX:  180,    // original x
     oppNearX:   92,    // in front of player (tweak to taste)
-    handSize:   14,    // your slap hand sprite size
+    handSize:   24,    // your slap hand sprite size
     // impact flash
-    flashAlpha: 0.75
+    flashAlpha: 0.65
   }
 };
 
