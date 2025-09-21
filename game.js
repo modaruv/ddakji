@@ -34,6 +34,19 @@ const CFG = {
   tiles: {
     blueStart: { x: 60,  y: 110 },
     redPos:    { x: 160, y: 65 }   // <-- ensure this matches your art layout
+  },
+    slap: {
+    // timings (frames at 60fps): total = 20 + 12 + 6 + 20 = 58
+    tApproach: 20,     // opponent rushes in
+    tWindup:   12,     // arm/hand wind-up
+    tHit:       6,     // impact window (flash)
+    tRetreat:  20,     // go back to base
+    // positions
+    oppBaseX:  180,    // original x
+    oppNearX:   96,    // in front of player (tweak to taste)
+    handSize:   64,    // your slap hand sprite size
+    // impact flash
+    flashAlpha: 0.65
   }
 };
 
@@ -139,14 +152,15 @@ function drawHearts(){
 
 function drawBase(opts){
   opts = opts || {};
-  if (assets.bg) ctx.drawImage(assets.bg,0,0); else { ctx.fillStyle='#121219'; ctx.fillRect(0,0,W,H); }
-  if (assets.opponent) ctx.drawImage(assets.opponent, 180, CFG.ui.opponentY);
-  if (assets.player)   ctx.drawImage(assets.player,   20,  70);
-  if (assets.tileRed && !opts.omitRed)
-    ctx.drawImage(assets.tileRed,  CFG.tiles.redPos.x, CFG.tiles.redPos.y);
-  if (assets.tileBlue && !opts.omitBlue)
-    ctx.drawImage(assets.tileBlue, CFG.tiles.blueStart.x, CFG.tiles.blueStart.y);
+  if (assets.bg) ctx.drawImage(assets.bg,0,0);
+  else { ctx.fillStyle='#121219'; ctx.fillRect(0,0,W,H); }
+
+  if (assets.opponent && !opts.omitOpp) ctx.drawImage(assets.opponent,  CFG.slap.oppBaseX, CFG.ui.opponentY);
+  if (assets.player   && !opts.omitPlayer) ctx.drawImage(assets.player,   20, 70);
+  if (assets.tileRed  && !opts.omitRed) ctx.drawImage(assets.tileRed,  CFG.tiles.redPos.x, CFG.tiles.redPos.y);
+  if (assets.tileBlue && !opts.omitBlue) ctx.drawImage(assets.tileBlue, CFG.tiles.blueStart.x, CFG.tiles.blueStart.y);
 }
+
 
 
 function computeHit(power,x,y){
@@ -271,15 +285,78 @@ function render(){
 }
 
 
-  if (game.scene==='slap'){
-    const amp = 2, shake = Math.sin(game.animT * 0.8) * amp;
-    ctx.save(); ctx.translate(shake, 0); drawBase(); ctx.restore();
+if (game.scene==='slap'){
+  // Timeline split
+  const T1 = CFG.slap.tApproach;
+  const T2 = T1 + CFG.slap.tWindup;
+  const T3 = T2 + CFG.slap.tHit;
+  const T4 = T3 + CFG.slap.tRetreat;
+  const t  = game.animT;
 
-    if (assets.box) ctx.drawImage(assets.box, CFG.ui.box.x, CFG.ui.box.y);
-    drawText(8, CFG.ui.box.y + 8, "SLAP!", assets.box ? "#000" : "#fff");
-    drawHearts(); // show remaining after slap
-    return;
+  // 1) Draw base world but hide static opponent (we’ll draw a moving one)
+  drawBase({ omitOpp:true }); 
+  drawHearts();
+
+  // Compute opponent X based on phase
+  let oppX = CFG.slap.oppBaseX;
+  if (t <= T1) {
+    // Approach interp
+    const u = t / T1;
+    oppX = CFG.slap.oppBaseX + (CFG.slap.oppNearX - CFG.slap.oppBaseX) * u;
+  } else if (t <= T3) {
+    // In front during windup+hit
+    oppX = CFG.slap.oppNearX;
+  } else if (t <= T4) {
+    // Retreat
+    const u = (t - T3) / (CFG.slap.tRetreat);
+    oppX = CFG.slap.oppNearX + (CFG.slap.oppBaseX - CFG.slap.oppNearX) * u;
+  } else {
+    oppX = CFG.slap.oppBaseX;
   }
+
+  // Draw opponent in foreground (over player)
+  if (assets.opponent) ctx.drawImage(assets.opponent, oppX, CFG.ui.opponentY);
+
+  // Hand swing during windup/hit phases
+  if ((t > T1) && (t <= T3) && assets.slapHand) {
+    // pivot around a point to make it feel like a swing from right to left
+    const size = CFG.slap.handSize;      // e.g. 64
+    const px = 20 + 18;                  // near player's head (player base x=20)
+    const py = 70 + 10;
+
+    // windup 0..1 then hit 1..2
+    let phase = (t - T1) / (CFG.slap.tWindup + CFG.slap.tHit); // 0..1-ish
+    const total = CFG.slap.tWindup + CFG.slap.tHit;
+    phase = (t - T1) / total; // 0..1
+    // Map to angle: windup back (~ -50deg) to forward (~ +25deg)
+    const ang = (phase < CFG.slap.tWindup/total)
+      ? ( -50 * (Math.PI/180) * (phase / (CFG.slap.tWindup/total)) )
+      : ( -50 * (Math.PI/180) + (75 * (Math.PI/180)) * ((phase - (CFG.slap.tWindup/total)) / (CFG.slap.tHit/total)) );
+
+    // Position offset so it comes from the right
+    const offX = 32; // how far to the right the hand originates
+    const offY = -6; // slight vertical tweak
+
+    ctx.save();
+    ctx.translate(px + offX, py + offY);
+    ctx.rotate(ang);
+    ctx.drawImage(assets.slapHand, -size*0.2, -size*0.2, size, size);
+    ctx.restore();
+  }
+
+  // Screen flash during impact window
+  if (t > T2 && t <= T3) {
+    const p = (t - T2) / (CFG.slap.tHit || 1);
+    ctx.fillStyle = `rgba(0,0,0,${CFG.slap.flashAlpha * (1 - Math.abs(0.5 - p)*2)})`;
+    ctx.fillRect(0,0,W,H);
+  }
+
+  // Dialog box (optional “SLAP!” text)
+  if (assets.box) ctx.drawImage(assets.box, CFG.ui.box.x, CFG.ui.box.y);
+  drawText(8, CFG.ui.box.y + 8, "SLAP!", assets.box ? "#000" : "#fff");
+  return;
+}
+
 
   if (game.scene==='gameOver'){
     drawBase();
@@ -329,19 +406,37 @@ function update(){
       SND.play('win');
     }
   }
-  if(game.scene==='slap'){
-    game.animT++;
-    if(game.animT >= 24){
-      game.hearts = Math.max(0, game.hearts - 1);
-      if (game.hearts === 0){
-        game.scene='gameOver';
-        SND.play('lose');
-      } else {
-        game.dialog = "Ouch! You lost a heart.";
-        game.dialogTick=0; game.dialogDone=false; game.scene='dialog';
-      }
+
+if (game.scene==='slap'){
+  game.animT++;
+
+  // Timeline to trigger SFX exactly once on impact
+  const T1 = CFG.slap.tApproach;
+  const T2 = T1 + CFG.slap.tWindup;
+  const T3 = T2 + CFG.slap.tHit;
+  const T4 = T3 + CFG.slap.tRetreat;
+
+  if (game.animT === T2 + 1) {
+    // first frame of impact window
+    SND.play('slap');
+  }
+
+  if (game.animT > T4) {
+    // End of sequence → apply damage and continue
+    game.hearts = Math.max(0, game.hearts - 1);
+    if (game.hearts === 0) {
+      game.scene = 'gameOver';
+      SND.play('lose');
+    } else {
+      game.dialog = "Ouch! You lost a heart.";
+      game.dialogTick = 0; game.dialogDone = false;
+      game.scene = 'dialog';
     }
   }
+}
+
+
+  
 }
 
 // ---------- input ----------
