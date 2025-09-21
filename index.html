@@ -1,1 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Kraken Games – Ddakji (GBA)</title>
+  <style>
+    :root { --scale: 3; --w: 240; --h: 160; }
+    html, body { margin:0; background:#0b0b12; }
+    .wrap { min-height:100dvh; display:flex; align-items:center; justify-content:center; }
+    .frame { image-rendering: pixelated; width: calc(var(--w) * var(--scale)); height: calc(var(--h) * var(--scale));
+             position: relative; box-shadow: 0 0 0 6px #222, 0 0 0 12px #000; border-radius:12px; overflow:hidden; }
+    canvas { width:100%; height:100%; image-rendering: pixelated; }
+    .muted { color:#9aa; text-align:center; margin-top:10px; font: 12px monospace; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div>
+      <div class="frame"><canvas id="gba" width="240" height="160"></canvas></div>
+      <div class="muted">Kraken Games · Ddakji · GBA-style — Click/Touch to play</div>
+    </div>
+  </div>
+
+<script src="sprites.js"></script>
+<script src="game.js"></script>
+  
+</body>
+</html>
 
