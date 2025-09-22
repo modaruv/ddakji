@@ -264,12 +264,7 @@ function getMenuItems(){
 
 
 function drawText(x,y,str,color){ ctx.fillStyle=color||"#fff"; ctx.fillText(str,x,y); }
-function drawDialog(text){
-  if (assets.box) ctx.drawImage(assets.box, CFG.ui.box.x, CFG.ui.box.y);
-  const color = assets.box ? "#000" : "#fff";
-  const shown = text.slice(0, Math.floor(game.dialogTick/2));
-  drawText(8, CFG.ui.box.y + 8, shown || '...', color);
-}
+
 function drawHearts(){
   if(!CFG.ui.showHearts) return;
   for(let i=0;i<5;i++){
@@ -314,18 +309,24 @@ function render(){
     return;
   }
 
-  // MENU
-  if (game.scene==='menu'){
-    drawBase(); drawHearts();
-    const msg = game.hasWon ? "You already have a passcode. Read Card Again? : "What will you do?";
-    drawDialog(msg);
+if (game.scene==='menu'){
+  drawBase(); drawHearts();
+
+  const items = getMenuItems();
+  const msg = game.hasWon
+    ? "You already have a passcode. Read card?"
+    : "What will you do?";
+  drawDialog(msg);
+
   // clamp selection to menu length
   if (game.selection >= items.length) game.selection = items.length - 1;
-  for(let i=0;i<items.length;i++){
-    drawText(18, H-30+i*10, (game.selection===i?"> ":"  ")+items[i], assets.box?"#000":"#fff");
+
+  for (let i = 0; i < items.length; i++) {
+    drawText(18, H - 30 + i * 10, (game.selection === i ? "> " : "  ") + items[i], assets.box ? "#000" : "#fff");
   }
-    return;
-  }
+  return;
+}
+
 
   // METER
   if (game.scene==='throwMeter'){
