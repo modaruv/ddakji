@@ -123,6 +123,7 @@ function resetGame(){
     faintAlpha:0,
     canRestart:false,
     introStep:0,               // tutorial step index
+    preSlapStep:0,
     cardAnim:false,            // card animation toggle
     cardPos:{x:0,y:0}
   };
@@ -141,6 +142,14 @@ const INTRO_LINES = [
   "Recruiter: to throw u must Lock POWER, then AIM left/right, then AIM up/down.",
   "Recruiter: Ready? Let's see what you've got."
 ];
+// Recruiter lines shown BEFORE slap (one line per click)
+const PRE_SLAP_LINES = [
+  "Recruiter: HaHaHA, Not Good Enough.",
+  "Recruiter: Rules are rules.",
+  "Recruiter: Brace yourself…"
+];
+
+
 
 // ----------------- helpers to draw -----------------
 // Layout the dialog text into pages of wrapped lines (by width)
@@ -309,6 +318,14 @@ function render(){
     drawDialog(line);
     return;
   }
+  // PRE-SLAP mini dialog (before slap animation)
+if (game.scene === 'preSlapDialog'){
+  drawBase(); drawHearts();
+  const line = PRE_SLAP_LINES[game.preSlapStep] || PRE_SLAP_LINES[PRE_SLAP_LINES.length-1];
+  drawDialog(line);   // uses your dialog typewriter & pager
+  return;
+}
+
 
 if (game.scene==='menu'){
   drawBase(); drawHearts();
@@ -576,7 +593,9 @@ function update(){
       if (game.lastOutcome==='win'){
         game.animT = 0; game.scene='winFlip'; SND.play('impact');
       } else {
-        game.animT = 0; game.scene='slap';    SND.play('slap');
+      game.preSlapStep = 0;
+      game.scene = 'preSlapDialog';
+      game.dialogTick = 0; game.dialogDone = false;  
       }
     }
   }
@@ -600,7 +619,7 @@ function update(){
         game.animT = 0;
         SND.play('lose');
       } else {
-        game.dialog = "Recruiter: HaHaHA, Not Good Enough.\nRecruiter: Rules are rules.\nRecruiter: Brace yourself…";
+        game.dialog = "Recruiter: HaHaHa, Not Good Enough. Rules are rules Brace yourself…";
         game.dialogTick=0; game.dialogDone=false;   game.dialogPages = null; // force layout
         game.scene='dialog';
       }
@@ -646,6 +665,18 @@ function onClick(){
 
   if (game.scene==='introDialog'){ nextIntro(); return; }
 
+  if (game.scene === 'preSlapDialog'){
+  // advance one line at a time (like tutorial)
+  if (game.preSlapStep < PRE_SLAP_LINES.length - 1){
+    game.preSlapStep++;
+    game.dialogTick = 0; game.dialogDone = false;
+  } else {
+    // finished lines → start slap animation
+    game.animT = 0;
+    game.scene = 'slap';
+  }
+  return;
+}
 if (game.scene==='menu'){
   const items = getMenuItems();
   const choice = items[game.selection];
@@ -707,20 +738,36 @@ if (game.scene==='menu'){
 }
 function onKey(e){
   if (game.scene==='menu'){
-  const items = getMenuItems();
-  if(e.key==='ArrowDown') game.selection=(game.selection+1)%items.length;
-  if(e.key==='ArrowUp')   game.selection=(game.selection-1+items.length)%items.length;
-  if(e.key==='Enter'||e.key===' ') onClick();
-  } else if (game.scene==='throwMeter' && (e.key==='Enter'||e.key===' ')){
+    const items = getMenuItems();
+    if(e.key==='ArrowDown') game.selection=(game.selection+1)%items.length;
+    if(e.key==='ArrowUp')   game.selection=(game.selection-1+items.length)%items.length;
+    if(e.key==='Enter'||e.key===' ') onClick();
+  } 
+  else if (game.scene==='throwMeter' && (e.key==='Enter'||e.key===' ')){
     onClick();
-  } else if (game.scene==='introDialog' && (e.key==='Enter'||e.key===' ')){
+  } 
+  else if (game.scene==='introDialog' && (e.key==='Enter'||e.key===' ')){
     nextIntro();
-  } else if ((game.scene==='dialog'||game.scene==='winDialog1'||game.scene==='showPassword'||game.scene==='winReminder') && (e.key==='Enter'||e.key===' ')){
+  } 
+  else if (game.scene === 'preSlapDialog' && (e.key==='Enter' || e.key===' ')){
+    if (game.preSlapStep < PRE_SLAP_LINES.length - 1){
+      game.preSlapStep++;
+      game.dialogTick = 0; 
+      game.dialogDone = false;
+    } else {
+      game.animT = 0;
+      game.scene = 'slap';
+    }
+    return;
+  }
+  else if ((game.scene==='dialog'||game.scene==='winDialog1'||game.scene==='showPassword'||game.scene==='winReminder') && (e.key==='Enter'||e.key===' ')){
     onClick();
-  } else if (game.scene==='gameOver' && (e.key==='Enter'||e.key===' ')){
+  } 
+  else if (game.scene==='gameOver' && (e.key==='Enter'||e.key===' ')){
     if (game.canRestart){ resetGame(); }
   }
 }
+
 
 // ----------------- MAIN LOOP -----------------
 function loop(){ update(); render(); requestAnimationFrame(loop); }
