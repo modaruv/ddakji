@@ -139,11 +139,11 @@ const INTRO_LINES = [
   "Recruiter: this is how you play: You throw your blue Folded paper tile at mine.",
   "Recruiter: If you flip my red tile, you win.",
   "Recruiter: If you don't... well, I SLAP YOU ;) ",
-  "Recruiter: to throw u must Lock POWER, then AIM left/right, then AIM up/down.",
+  "Recruiter: to throw you must Lock POWER, then AIM left/right, then AIM up/down.",
   "Recruiter: Ready? Let's see what you've got."
 ];
 // Recruiter lines shown BEFORE slap (one line per click)
-const PRE_SLAP_LINES = [
+const  = [
   "Recruiter: HaHaHA, Not Good Enough.",
   "Recruiter: Rules are rules.",
   "Recruiter: Brace yourself…"
@@ -619,7 +619,7 @@ function update(){
         game.animT = 0;
         SND.play('lose');
       } else {
-        game.dialog = "Recruiter: HaHaHa, Not Good Enough. Rules are rules Brace yourself…";
+        game.dialog = "Recruiter: HaHaHa, wanna try again?";
         game.dialogTick=0; game.dialogDone=false;   game.dialogPages = null; // force layout
         game.scene='dialog';
       }
