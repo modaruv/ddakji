@@ -143,7 +143,7 @@ const INTRO_LINES = [
   "Recruiter: Ready? Let's see what you've got."
 ];
 // Recruiter lines shown BEFORE slap (one line per click)
-const  = [
+const  PRE_SLAP_LINES= [
   "Recruiter: HaHaHA, Not Good Enough.",
   "Recruiter: Rules are rules.",
   "Recruiter: Brace yourself…"
