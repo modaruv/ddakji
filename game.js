@@ -63,6 +63,14 @@ const CFG = {
   }
 };
 
+// Dialog layout config
+const DIALOG = {
+  padX: 8,         // left/right padding inside box
+  padY: 8,         // top padding inside box
+  lineHeight: 10,  // for 8px font, 10px line spacing looks right
+  maxLines: 3      // how many lines fit in the 48px-tall box
+};
+
 const smooth = x => x*x*(3-2*x); // smoothstep
 
 // ----------------- tiny utils -----------------
@@ -134,6 +142,127 @@ const INTRO_LINES = [
 ];
 
 // ----------------- helpers to draw -----------------
+// Layout the dialog text into pages of wrapped lines (by width)
+function layoutDialog(text) {
+  const innerW = CFG.ui.box.w - DIALOG.padX*2;
+  const words = text.replace(/\r/g,'').split(/\s+/);
+  const lines = [];
+  let line = '';
+
+  function pushLine() {
+    if (line.length) { lines.push(line); line=''; }
+  }
+
+  // support manual line breaks with '\n'
+  for (let i=0;i<words.length;i++) {
+    const w = words[i];
+    if (w.indexOf('\n') !== -1) {
+      const parts = w.split('\n');
+      for (let j=0;j<parts.length;j++) {
+        const piece = parts[j];
+        const test = line ? (line + ' ' + piece).trim() : piece;
+        if (test && ctx.measureText(test).width > innerW) {
+          pushLine();
+          // if a single piece is too long, hard-wrap by chars
+          let buf = piece;
+          while (ctx.measureText(buf).width > innerW && buf.length > 1) {
+            let cut = buf.length - 1;
+            while (cut > 1 && ctx.measureText(buf.slice(0, cut)).width > innerW) cut--;
+            lines.push(buf.slice(0, cut));
+            buf = buf.slice(cut);
+          }
+          line = buf;
+        } else {
+          line = test;
+        }
+        if (j < parts.length - 1) pushLine(); // forced break
+      }
+    } else {
+      const test = line ? (line + ' ' + w).trim() : w;
+      if (ctx.measureText(test).width > innerW) {
+        pushLine();
+        // hard-wrap very long word
+        let buf = w;
+        while (ctx.measureText(buf).width > innerW && buf.length > 1) {
+          let cut = buf.length - 1;
+          while (cut > 1 && ctx.measureText(buf.slice(0, cut)).width > innerW) cut--;
+          lines.push(buf.slice(0, cut));
+          buf = buf.slice(cut);
+        }
+        line = buf;
+      } else {
+        line = test;
+      }
+    }
+  }
+  pushLine();
+
+  // paginate
+  const pages = [];
+  for (let i=0;i<lines.length;i+=DIALOG.maxLines) {
+    pages.push(lines.slice(i, i + DIALOG.maxLines));
+  }
+  return pages.length ? pages : [['']]; // at least one empty line
+}
+
+// Draw dialog with wrapping, paging, and typewriter on current page
+function drawDialog(text) {
+  // (Re)layout if text changed
+  if (game._layoutText !== text) {
+    game._layoutText = text;
+    game.dialogPages = layoutDialog(text);
+    game.dialogPage = 0;
+    game.dialogTick = 0;
+    game.dialogDone = false;
+  }
+
+  if (assets.box) ctx.drawImage(assets.box, CFG.ui.box.x, CFG.ui.box.y);
+
+  const color = assets.box ? "#000" : "#fff";
+  const lines = game.dialogPages[game.dialogPage] || [''];
+  const maxChars = Math.floor(game.dialogTick / 2); // typewriter speed
+
+  // Reveal characters across this page (line by line)
+  let shown = 0;
+  for (let i=0;i<lines.length;i++) {
+    const remaining = Math.max(0, maxChars - shown);
+    const toDraw = remaining <= 0 ? '' : lines[i].slice(0, remaining);
+    ctx.fillStyle = color;
+    ctx.fillText(toDraw, CFG.ui.box.x + DIALOG.padX, CFG.ui.box.y + DIALOG.padY + i*DIALOG.lineHeight);
+    shown += lines[i].length;
+  }
+
+  // Continue arrow if more pages exist
+  const more = game.dialogPage < (game.dialogPages.length - 1);
+  if (!more) {
+    // mark done when fully revealed
+    const pageChars = lines.join('').length + (lines.length-1)*0; // simple char count
+    if (maxChars >= pageChars) game.dialogDone = true;
+  } else {
+    // tiny "▶" bottom-right
+    ctx.fillStyle = color;
+    ctx.fillText('▶', CFG.ui.box.x + CFG.ui.box.w - DIALOG.padX - 6, CFG.ui.box.y + CFG.ui.box.h - DIALOG.padY - 10);
+  }
+}
+
+// Advance dialog: next page if any; returns true if it paged, false if no more pages
+function advanceDialogPage() {
+  if (!game.dialogPages) return false;
+  if (game.dialogPage < game.dialogPages.length - 1) {
+    game.dialogPage++;
+    game.dialogTick = 0;
+    game.dialogDone = false;
+    return true;
+  }
+  return false;
+}
+function getMenuItems(){
+  return game.hasWon ? ["READ CARD"] : ["THROW TILE","STATS","HELP","QUIT"];
+}
+
+
+
+
 function drawText(x,y,str,color){ ctx.fillStyle=color||"#fff"; ctx.fillText(str,x,y); }
 function drawDialog(text){
   if (assets.box) ctx.drawImage(assets.box, CFG.ui.box.x, CFG.ui.box.y);
@@ -188,11 +317,13 @@ function render(){
   // MENU
   if (game.scene==='menu'){
     drawBase(); drawHearts();
-    const msg = game.hasWon ? "You already have a passcode. Play for fun?" : "What will you do?";
+    const msg = game.hasWon ? "You already have a passcode. Read Card Again? : "What will you do?";
     drawDialog(msg);
-    for(let i=0;i<menuItems.length;i++){
-      drawText(18, H-30+i*10, (game.selection===i?"> ":"  ")+menuItems[i], assets.box?"#000":"#fff");
-    }
+  // clamp selection to menu length
+  if (game.selection >= items.length) game.selection = items.length - 1;
+  for(let i=0;i<items.length;i++){
+    drawText(18, H-30+i*10, (game.selection===i?"> ":"  ")+items[i], assets.box?"#000":"#fff");
+  }
     return;
   }
 
@@ -512,20 +643,30 @@ function onClick(){
 
   if (game.scene==='introDialog'){ nextIntro(); return; }
 
-  if (game.scene==='menu'){
-    const c = menuItems[game.selection];
-    if (c==='THROW TILE'){
-      // fun line if already won
-      if (game.hasWon){
-        game.scene='dialog'; game.dialog=`You already have a passcode: ${game.wonPassword}. But sure—play for fun!`;
-        game.dialogTick=0; return;
-      }
-      game.meterPhase=0; game.scene='throwMeter'; game.dialogTick=0; return;
-    }
-    if (c==='HELP'){ game.scene='dialog'; game.dialog="Lock POWER, then AIM X, then AIM Y. Hit the red tile to flip it."; game.dialogTick=0; return; }
-    if (c==='STATS'){ game.scene='dialog'; game.dialog=`Hearts: ${game.hearts}`+(game.hasWon?`  Pass: ${game.wonPassword}`:""); game.dialogTick=0; return; }
-    if (c==='QUIT'){ game.scene='dialog'; game.dialog='See you at Kraken Games!'; game.dialogTick=0; return; }
+if (game.scene==='menu'){
+  const items = getMenuItems();
+  const choice = items[game.selection];
+
+  if (choice === 'READ CARD'){
+    game.dialog = `Card reads: ${game.wonPassword}\nRecruiter: Keep it safe—you'll need it to register.`;
+    game.dialogTick=0; game.dialogDone=false;
+    game.dialogPages=null; // force relayout
+    game.scene='dialog';
+    return;
   }
+
+  if (choice==='THROW TILE'){
+    if (game.hasWon){
+      game.dialog = `You already have a passcode: ${game.wonPassword}. But sure—play for fun!`;
+      game.dialogTick=0; game.dialogDone=false; game.dialogPages=null;
+      game.scene='dialog'; return;
+    }
+    game.meterPhase=0; game.scene='throwMeter'; game.dialogTick=0; return;
+  }
+  if (choice==='HELP'){ game.scene='dialog'; game.dialog="Lock POWER, then AIM X, then AIM Y. Flip the red tile to win!"; game.dialogTick=0; game.dialogDone=false; game.dialogPages=null; return; }
+  if (choice==='STATS'){ game.scene='dialog'; game.dialog=`Hearts: ${game.hearts}` + (game.hasWon?`\nPass: ${game.wonPassword}`:''); game.dialogTick=0; game.dialogDone=false; game.dialogPages=null; return; }
+  if (choice==='QUIT'){ game.scene='dialog'; game.dialog='See you at Kraken Games!'; game.dialogTick=0; game.dialogDone=false; game.dialogPages=null; return; }
+}
 
   if (game.scene==='throwMeter'){
     if (game.meterPhase < 2){ game.meterPhase++; SND.play('throw'); return; }
@@ -555,15 +696,18 @@ function onClick(){
     return;
   }
 
-  if (game.scene==='dialog'){ game.scene='menu'; game.dialog="What will you do?"; game.selection=0; return; }
+  if (game.scene==='dialog'){
+    if (advanceDialogPage()) return;
+    game.scene='menu'; game.dialog="What will you do?"; game.selection=0; return; }
 
   // DO NOT restart on generic click after Game Over; require Enter/Space
 }
 function onKey(e){
   if (game.scene==='menu'){
-    if(e.key==='ArrowDown') game.selection=(game.selection+1)%menuItems.length;
-    if(e.key==='ArrowUp')   game.selection=(game.selection-1+menuItems.length)%menuItems.length;
-    if(e.key==='Enter'||e.key===' ') onClick();
+  const items = getMenuItems();
+  if(e.key==='ArrowDown') game.selection=(game.selection+1)%items.length;
+  if(e.key==='ArrowUp')   game.selection=(game.selection-1+items.length)%items.length;
+  if(e.key==='Enter'||e.key===' ') onClick();
   } else if (game.scene==='throwMeter' && (e.key==='Enter'||e.key===' ')){
     onClick();
   } else if (game.scene==='introDialog' && (e.key==='Enter'||e.key===' ')){
