@@ -133,11 +133,12 @@ const menuItems = ["THROW TILE","STATS","HELP","QUIT"];
 
 // Tutorial dialog (opponent explains rules)
 const INTRO_LINES = [
-  "Recruiter: Ddakji time.",
-  "Recruiter: You throw your blue tile at mine.",
+  "Recruiter: Hello, want a valuable Prize? lets play Ddakji.",
+  "Recruiter: Beat me and i'll Reward you, Lose and i will Slap You!",
+  "Recruiter: this is how you play: You throw your blue Folded paper tile at mine.",
   "Recruiter: If you flip my red tile, you win.",
-  "Recruiter: If you don't... well, you get slapped.",
-  "Recruiter: Lock POWER, then AIM left/right, then AIM up/down.",
+  "Recruiter: If you don't... well, I SLAP YOU ;) ",
+  "Recruiter: to throw u must Lock POWER, then AIM left/right, then AIM up/down.",
   "Recruiter: Ready? Let's see what you've got."
 ];
 
@@ -418,7 +419,7 @@ if (game.scene==='menu'){
   // WIN DIALOG 1 (opponent line)
   if (game.scene==='winDialog1'){
     drawBase(); drawHearts();
-    drawDialog("Recruiter: You finally flipped it! Take this card.");
+    drawDialog("Recruiter: You flipped it!.\nRecruiter: A promise is a promise.\nRecruiter: Take this card. You'll want to keep it.");
     return;
   }
 
@@ -460,7 +461,7 @@ if (game.scene==='menu'){
   }
   if (game.scene==='winReminder'){
     drawBase(); drawHearts();
-    drawDialog("Recruiter: Write it down. You'll need it to register.");
+    drawDialog("Recruiter: Write it down. You'll need it.");
     return;
   }
 
@@ -599,8 +600,9 @@ function update(){
         game.animT = 0;
         SND.play('lose');
       } else {
-        game.dialog="Ouch! You lost a heart.";
-        game.dialogTick=0; game.dialogDone=false; game.scene='dialog';
+        game.dialog = "Recruiter: HaHaHA, Not Good Enough.\nRecruiter: Rules are rules.\nRecruiter: Brace yourself…";
+        game.dialogTick=0; game.dialogDone=false;   game.dialogPages = null; // force layout
+        game.scene='dialog';
       }
     }
   }
@@ -649,7 +651,7 @@ if (game.scene==='menu'){
   const choice = items[game.selection];
 
   if (choice === 'READ CARD'){
-    game.dialog = `Card reads: ${game.wonPassword}\nRecruiter: Keep it safe—you'll need it to register.`;
+    game.dialog = `Card reads: ${game.wonPassword}\nRecruiter: Keep it safe—you'll need it.`;
     game.dialogTick=0; game.dialogDone=false;
     game.dialogPages=null; // force relayout
     game.scene='dialog';
