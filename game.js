@@ -568,7 +568,7 @@ if (game.scene==='menu'){
     ctx.fillStyle = `rgba(0,0,0,${CFG.faint.maxAlpha})`;
     ctx.fillRect(0,0,W,H);
     if (assets.box) ctx.drawImage(assets.box, CFG.ui.box.x, CFG.ui.box.y);
-    const tail = game.canRestart ? " Press Enter to play again." : " …";
+    const tail = game.canRestart ? " " : " …";
     drawText(8, CFG.ui.box.y + 8, "Oh no… you fainted. Game Over." + tail, assets.box ? "#000" : "#fff");
     return;
   }
@@ -579,8 +579,8 @@ if (game.scene==='menu'){
 
 // ----------------- UPDATE -----------------
 function update(){
-  if (['introDialog','menu','dialog','winDialog1','showPassword','winReminder'].includes(game.scene)){
-    if(!game.dialogDone) game.dialogTick++;
+ if (['introDialog','menu','dialog','winDialog1','showPassword','winReminder','preSlapDialog'].includes(game.scene)){
+  if(!game.dialogDone) game.dialogTick++;
   }
   if (game.scene==='throwMeter'){
     if(game.meterPhase===0) game.power = 0.5 + 0.5*Math.sin(performance.now()/200);
@@ -595,7 +595,8 @@ function update(){
       } else {
       game.preSlapStep = 0;
       game.scene = 'preSlapDialog';
-      game.dialogTick = 0; game.dialogDone = false;  
+      game.dialogTick = 0; game.dialogDone = false; 
+        game._layoutText = null;
       }
     }
   }
