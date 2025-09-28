@@ -714,7 +714,15 @@ if (game.scene==='menu'){
     // Start card fly
     game.animT=0; game.scene='cardFly';
     // obtain password locally for now (plug your server later)
-    game.password = localPassword();
+    async function fetchPasscodeFromServer() {
+  try {
+    const resp = await fetch('/api/passcodes/issue', { method: 'POST' });
+    const data = await resp.json();
+    if (data && data.ok && data.code) return data.code;
+  } catch (e) {}
+  // fallback (should be rare)
+  return localPassword();
+};
     return;
   }
 
