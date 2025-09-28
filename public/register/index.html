@@ -1,0 +1,49 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Registration</title>
+  <style>
+    body { font-family: system-ui, sans-serif; background:#0b0b12; color:#fff; display:grid; place-items:center; min-height:100vh; margin:0; }
+    .card { background:#161622; border:1px solid #2a2a3a; border-radius:12px; padding:24px; width:min(560px, 92vw); }
+    label { display:block; margin:.6rem 0 .2rem; color:#ccd; }
+    input, textarea { width:100%; padding:10px 12px; border-radius:8px; border:1px solid #2a2a3a; background:#0f0f18; color:#fff; }
+    button { margin-top:12px; padding:12px 14px; border-radius:10px; border:0; background:#3a3af2; color:#fff; font-weight:700; cursor:pointer; }
+    .hint { color:#aab; margin-top:8px; }
+    .hidden { display:none; }
+    .ok { color:#7fffbf; }
+    .err { color:#ff7f99; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h2>Registration</h2>
+
+    <!-- Step 1: Passcode gate -->
+    <div id="gate">
+      <label for="code">Passcode</label>
+      <input id="code" placeholder="theflyingfox" autocomplete="off" />
+      <button id="unlockBtn">Unlock form</button>
+      <div id="gateMsg" class="hint"></div>
+    </div>
+
+    <!-- Step 2: Real form (hidden until unlocked) -->
+    <form id="regForm" class="hidden">
+      <label for="name">Full name</label>
+      <input id="name" required />
+
+      <label for="email">Email</label>
+      <input id="email" type="email" required />
+
+      <label for="phone">Phone</label>
+      <input id="phone" />
+
+      <button type="submit">Submit</button>
+      <div id="formMsg" class="hint"></div>
+    </form>
+  </div>
+
+  <script src="./register.js" defer></script>
+</body>
+</html>
