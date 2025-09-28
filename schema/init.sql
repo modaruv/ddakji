@@ -1,0 +1,30 @@
+CREATE TABLE IF NOT EXISTS passcodes (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  code TEXT UNIQUE NOT NULL,
+  status TEXT NOT NULL DEFAULT 'issued',
+  issued_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  used_at DATETIME,
+  used_ip TEXT,
+  note TEXT
+);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_passcodes_code ON passcodes(code);
+
+CREATE TABLE IF NOT EXISTS claim_sessions (
+  token TEXT PRIMARY KEY,
+  code TEXT NOT NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  expires_at DATETIME NOT NULL,
+  used INTEGER NOT NULL DEFAULT 0
+);
+CREATE INDEX IF NOT EXISTS idx_sessions_code ON claim_sessions(code);
+
+CREATE TABLE IF NOT EXISTS registrations (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  code TEXT NOT NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  name TEXT,
+  email TEXT,
+  phone TEXT,
+  extra TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_reg_code ON registrations(code);
