@@ -7,5 +7,6 @@ export async function onRequestGet(context) {
     });
   } catch (e) {
     return new Response("DB error: " + e.message, { status: 500 });
+    
   }
 }
