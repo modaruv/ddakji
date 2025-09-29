@@ -130,6 +130,21 @@ function resetGame(){
 }
 resetGame();
 
+// --- server passcode helper ---
+let passcodePromise = null;
+
+async function getServerPasscode(){
+  try {
+    const r = await fetch('/api/passcodes/issue', { method: 'POST' });
+    const j = await r.json();
+    if (j && j.code) return j.code;
+  } catch (e) {
+    console.warn('Passcode fetch failed, using local fallback', e);
+  }
+  return localPassword(); // fallback
+}
+
+
 const menuItems = ["THROW TILE","STATS","HELP","QUIT"];
 
 // Tutorial dialog (opponent explains rules)
@@ -436,7 +451,7 @@ if (game.scene==='menu'){
   // WIN DIALOG 1 (opponent line)
   if (game.scene==='winDialog1'){
     drawBase(); drawHearts();
-    drawDialog("Recruiter: You flipped it!.\nRecruiter: A promise is a promise.\nRecruiter: Take this card. You'll want to keep it.");
+    drawDialog("Recruiter: You flipped it!. Good Job A promise is a promise. Take this card. You'll want to keep it.");
     return;
   }
 
@@ -600,13 +615,19 @@ function update(){
       }
     }
   }
+
+
   if (game.scene==='winFlip'){
-    game.animT++;
-    if (game.animT >= CFG.winFlip.frames){
-      // Go to opponent dialog → card fly → show password → reminder
-      game.scene='winDialog1'; game.dialogTick=0; game.dialogDone=false; SND.play('win');
-    }
+  game.animT++;
+  if (game.animT >= CFG.winFlip.frames){
+    // start fetching code NOW so it's ready by the time we show the card
+    passcodePromise = getServerPasscode().then(code => { game.password = code; });
+    game.scene='winDialog1';
+    game.dialogTick=0; game.dialogDone=false; SND.play('win');
   }
+}
+
+  
   if (game.scene==='slap'){
     game.animT++;
     const T1=CFG.slap.tApproach, T2=T1+CFG.slap.tWindup, T3=T2+CFG.slap.tHit, T4=T3+CFG.slap.tRetreat;
@@ -683,7 +704,7 @@ if (game.scene==='menu'){
   const choice = items[game.selection];
 
   if (choice === 'READ CARD'){
-    game.dialog = `Card reads: ${game.wonPassword}\nRecruiter: Keep it safe—you'll need it.`;
+    game.dialog = `Card reads: ${game.wonPassword} \n Recruiter: Keep it safe—you'll need it.`;
     game.dialogTick=0; game.dialogDone=false;
     game.dialogPages=null; // force relayout
     game.scene='dialog';
@@ -710,21 +731,19 @@ if (game.scene==='menu'){
     game.animT = 0; game.scene='anim'; SND.play('throw'); return;
   }
 
-  if (game.scene==='winDialog1'){
-    // Start card fly
-    game.animT=0; game.scene='cardFly';
-    // obtain password locally for now (plug your server later)
-    async function fetchPasscodeFromServer() {
-  try {
-    const resp = await fetch('/api/passcodes/issue', { method: 'POST' });
-    const data = await resp.json();
-    if (data && data.ok && data.code) return data.code;
-  } catch (e) {}
-  // fallback (should be rare)
-  return localPassword();
-};
-    return;
-  }
+if (game.scene === 'winDialog1') {
+  // Start card fly
+  game.animT = 0;
+  game.scene = 'cardFly';
+
+  // start fetching the passcode immediately
+  getServerPasscode().then(code => {
+    game.password = code;
+  });
+
+  return;
+}
+
 
   if (game.scene==='showPassword'){
     // After showing the text on the card, go to reminder
