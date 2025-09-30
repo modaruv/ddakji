@@ -1,47 +1,103 @@
 <!doctype html>
-<html>
+<html lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Registration</title>
+  <title>Kraken Games · Registration</title>
+  <link rel="icon" href="/favicon.ico">
   <style>
-    body { font-family: system-ui, sans-serif; background:#0b0b12; color:#fff; display:grid; place-items:center; min-height:100vh; margin:0; }
-    .card { background:#161622; border:1px solid #2a2a3a; border-radius:12px; padding:24px; width:min(560px, 92vw); }
-    label { display:block; margin:.6rem 0 .2rem; color:#ccd; }
-    input, textarea { width:100%; padding:10px 12px; border-radius:8px; border:1px solid #2a2a3a; background:#0f0f18; color:#fff; }
-    button { margin-top:12px; padding:12px 14px; border-radius:10px; border:0; background:#3a3af2; color:#fff; font-weight:700; cursor:pointer; }
-    .hint { color:#aab; margin-top:8px; }
-    .hidden { display:none; }
-    .ok { color:#7fffbf; }
-    .err { color:#ff7f99; }
+    :root {
+      --bg:#0b0c13; --card:#171923; --muted:#8fa0c2; --text:#e7e9f4;
+      --primary:#6e6bff; --primary-2:#504ef8; --success:#2ecc71; --danger:#ff5c5c;
+      --ring:rgba(110,107,255,.35);
+    }
+    html,body {height:100%; margin:0; background:radial-gradient(1200px 600px at 50% -10%, #101323 0%, #0b0c13 60%); color:var(--text); font:16px/1.4 ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Inter,Arial; }
+    .wrap { min-height:100%; display:grid; place-items:center; padding:24px; }
+    .card { width:min(680px, 92vw); background:var(--card); border:1px solid #202234; border-radius:20px; box-shadow:0 18px 60px rgba(0,0,0,.45); padding:28px 28px 22px; }
+    h1 { margin:0 0 6px; font-size:28px; letter-spacing:.5px; }
+    p.lead { margin:0 0 20px; color:var(--muted); }
+    .row { display:flex; gap:12px; flex-wrap:wrap; }
+    .field { flex:1 1 240px; display:flex; flex-direction:column; margin:10px 0; }
+    label { font-size:13px; color:#b7bfd8; margin-bottom:6px; }
+    input[type="text"], input[type="tel"], input[type="number"], input[type="email"], textarea, select {
+      background:#0f111a; color:var(--text); border:1px solid #22263a; border-radius:12px; padding:12px 12px; outline:none;
+    }
+    input:focus, textarea:focus, select:focus { border-color:var(--primary); box-shadow:0 0 0 6px var(--ring); }
+    textarea { min-height:96px; resize:vertical; }
+    .radios { display:flex; gap:14px; align-items:center; flex-wrap:wrap; }
+    .muted { color:var(--muted); font-size:13px; }
+    .actions { margin-top:16px; display:flex; gap:10px; align-items:center; }
+    button.primary { background:linear-gradient(180deg, var(--primary), var(--primary-2)); border:none; color:#fff; padding:12px 18px; border-radius:12px; font-weight:700; cursor:pointer; }
+    button.secondary { background:#262a40; color:#e2e6ff; border:1px solid #32385a; padding:10px 14px; border-radius:10px; cursor:pointer; }
+    .ok { color:var(--success); }
+    .err { color:var(--danger); }
+    .divider { height:1px; background:#23263a; margin:18px 0; }
+    .hide { display:none !important; }
   </style>
 </head>
 <body>
-  <div class="card">
-    <h2>Registration</h2>
+  <div class="wrap">
+    <div class="card">
+      <h1>Kraken Games – Registration</h1>
+      <p class="lead">Unlock the form with your passcode, then complete your details.</p>
 
-    <!-- Step 1: Passcode gate -->
-    <div id="gate">
-      <label for="code">Passcode</label>
-      <input id="code" placeholder="theflyingfox" autocomplete="off" />
-      <button id="unlockBtn">Unlock form</button>
-      <div id="gateMsg" class="hint"></div>
+      <!-- Gate view -->
+      <section id="gate">
+        <div class="field" style="max-width:380px">
+          <label>Passcode</label>
+          <input id="code" type="text" placeholder="" autocomplete="one-time-code" />
+          <div id="gateMsg" class="muted" style="margin-top:6px;"></div>
+        </div>
+        <div class="actions">
+          <button id="btnClaim" class="primary">Unlock</button>
+          <button id="btnHome" class="secondary" onclick="location.href='/'">Back</button>
+        </div>
+        <div class="divider"></div>
+      </section>
+
+      <!-- Form view -->
+      <section id="form" class="hide">
+        <div class="row">
+          <div class="field"><label>Full name *</label><input id="full_name" type="text" /></div>
+          <div class="field"><label>Age (13–65) *</label><input id="age" type="number" min="13" max="65" /></div>
+        </div>
+
+        <div class="field">
+          <label>Gender *</label>
+          <div class="radios">
+            <label><input type="radio" name="gender" value="male"> Male</label>
+            <label><input type="radio" name="gender" value="female"> Female</label>
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="field"><label>Phone (WhatsApp) *</label><input id="phone" type="tel" placeholder="+971..." /></div>
+          <div class="field"><label>Email (optional)</label><input id="email" type="email" placeholder="you@example.com" /></div>
+        </div>
+
+        <div class="field">
+          <label>Public profile link (Instagram/TikTok/etc) *</label>
+          <input id="profile_url" type="text" placeholder="https://instagram.com/yourname" />
+        </div>
+
+        <div class="field">
+          <label>Health notes / allergies *</label>
+          <textarea id="health_notes" placeholder="e.g., No allergies."></textarea>
+        </div>
+
+        <div class="field">
+          <label><input id="agree_rules" type="checkbox"> I agree to the event’s rules and conditions *</label>
+        </div>
+        <div class="field">
+          <label><input id="agree_contact" type="checkbox"> I agree to be contacted if selected and that only after paying the ticket ammount of 10 JD that i reserve my seat in the event and that the ticket amount is not refundable under any circumstances*</label>
+        </div>
+
+        <div id="formMsg" class="muted" style="margin:8px 0 2px;"></div>
+        <div class="actions">
+          <button id="btnSubmit" class="primary">Submit registration</button>
+        </div>
+      </section>
     </div>
-
-    <!-- Step 2: Real form (hidden until unlocked) -->
-    <form id="regForm" class="hidden">
-      <label for="name">Full name</label>
-      <input id="name" required />
-
-      <label for="email">Email</label>
-      <input id="email" type="email" required />
-
-      <label for="phone">Phone</label>
-      <input id="phone" />
-
-      <button type="submit">Submit</button>
-      <div id="formMsg" class="hint"></div>
-    </form>
   </div>
 
   <script src="./register.js" defer></script>
